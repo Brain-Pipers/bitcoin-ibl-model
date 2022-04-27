@@ -6,6 +6,7 @@ KAGGLE_DATASET = "scripts/data/bitstampUSD_1-min_data_2012-01-01_to_2021-03-31.c
 KAGGLE_DATASET_NEW = "scripts/data/NewbitstampUSD_1-min_data_2012-01-01_to_2021-03-31.csv"
 SAMPLE_DATASET = "scripts/data/bitstampUSD_1-min-10_SAMPLE.csv"
 ONCE_PER_DAY_DATESET = "scripts/data/once_per_day_prices.csv"
+DATE_SEGMENT = "scripts/data/date_segment.csv"
 EVERY_HOUR_OF_DAY_DATASET = "scripts/data/every_hour_of_day_prices.csv"
 
 
@@ -59,8 +60,6 @@ def get_data(size=10000):
             dates.add(row['Date'])
             prices.append(row['Open'])
         
-
-
     print(dates)
     print("df After new rows")
     print(df)
@@ -124,3 +123,55 @@ def get_lifetime_prices_once_per_day(dataset=KAGGLE_DATASET, file_name=ONCE_PER_
     prices_df = pd.DataFrame(data)
     prices_df.to_csv(file_name)
     print("Success!")
+
+def get_date_segment_1_once_per_day(dataset=KAGGLE_DATASET,file_name=DATE_SEGMENT,
+                                        start_date="2018-01-01", end_date="2018-12-30"):
+    df = get_dataset(file_name=dataset)
+    # Remove nan 
+    df = df[df["Open"].notna()]
+    df['Date'] = df.apply(lambda row: get_date_hour(row),axis=1)
+    print(df.head())
+    df = df.loc[df['Date'].between(start_date, end_date)]
+    print('----------------------------------')
+
+
+    print(df.head())
+    #df = df.loc[df['Date'].between(start_date,end_date)]
+    df.reset_index()
+
+    df.to_csv("file_1.csv")
+
+def only_hours(date, *hours):
+    split_time = date.split("#")
+    date_hour = split_time[1]
+    return date_hour not in hours
+
+def get_date_segment_once_per_day(dataset=KAGGLE_DATASET,file_name=DATE_SEGMENT,
+                                        start_date="2017-01-01", end_date="2019-12-30"):
+    """Will create a CSV that contains all the prices."""
+
+    df = get_dataset(file_name=dataset)
+    # Remove nan 
+    df = df[df["Open"].notna()]
+    df['Date'] = df.apply(lambda row: get_date_hour(row),axis=1)
+    print(df.head())
+    df = df.loc[df['Date'].between(start_date, end_date)]
+    print(df.head())
+    df.reset_index()
+
+    prices = []
+    dates = []
+    set_of_dates = set()
+    for _, row in df.iterrows():
+        if only_hours(row['Date'], "08:", "12:"):
+            continue
+        if row['Date'] not in set_of_dates:
+            prices.append(row['Open'])
+            dates.append(row['Date'])
+            set_of_dates.add(row['Date'])
+    data = {'Prices':prices, 'Date':dates}
+    prices_df = pd.DataFrame(data)
+    print(prices_df.head())
+    prices_df.to_csv(file_name)
+    print("Success!")
+
